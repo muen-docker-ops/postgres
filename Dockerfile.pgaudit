@@ -1,17 +1,18 @@
-# Use official PostgreSQL image
-ARG PG_VERSION=17
-FROM postgres:${PG_VERSION}
+# Base image
+ARG PG_MAJOR=17
+FROM postgres:${PG_MAJOR}
 
-# Install build dependencies & compile pgaudit
+# Build pgaudit
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential \
         ca-certificates \
         wget \
         git && \
-    # Clone pgaudit for PostgreSQL 17
-    git clone --branch REL_${PG_VERSION}_STABLE https://github.com/pgaudit/pgaudit.git /tmp/pgaudit && \
-    cd /tmp/pgaudit && make && make install && \
+    # Always use REL_<MAJOR>_STABLE
+    git clone --branch REL_${PG_MAJOR}_STABLE https://github.com/pgaudit/pgaudit.git /tmp/pgaudit && \
+    cd /tmp/pgaudit && \
+    make && make install && \
     # Cleanup
     rm -rf /tmp/pgaudit && \
     apt-get remove -y build-essential git wget && \
@@ -19,6 +20,5 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Enable pgaudit in postgresql.conf (optional)
-# 如果你需要自动开启，可以启用下面这段
-# RUN echo "shared_preload_libraries='pgaudit'" >> /usr/local/share/postgresql/postgresql.conf.sample
+# Enable pgaudit settings
+RUN echo "shared_preload_libraries='pgaudit'" >> /usr/share/postgresql/postgresql.conf.sample
