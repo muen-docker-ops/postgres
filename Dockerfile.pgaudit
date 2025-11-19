@@ -9,14 +9,15 @@ RUN apt-get update && \
         ca-certificates \
         wget \
         git \
-        postgresql-server-dev-${PG_MAJOR} && \
+        postgresql-server-dev-${PG_MAJOR} \
+        libkrb5-dev && \
     # Clone the correct pgaudit branch
     git clone --branch REL_${PG_MAJOR}_STABLE https://github.com/pgaudit/pgaudit.git /tmp/pgaudit && \
     cd /tmp/pgaudit && \
     make USE_PGXS=1 && make USE_PGXS=1 install && \
     # Cleanup
     rm -rf /tmp/pgaudit && \
-    apt-get remove -y build-essential git wget && \
+    apt-get remove -y build-essential git wget libkrb5-dev && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
