@@ -1,49 +1,54 @@
-name: Build PostgreSQL 18 + PGAudit Image
+name: Build PostgreSQL 17 + pgaudit
 
 on:
   push:
-    branches: [ "main" ]
-    tags: [ "v*" ]
+    branches: ["main"]
   workflow_dispatch:
 
 env:
   IMAGE_NAME: postgres-audit
-  REGISTRY: ghcr.io
+  PG_VERSION: "17"
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      # Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Login to GHCR
+      # Log in to GHCR
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract version tag
-        id: vars
-        run: echo "TAG=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+      # Setup Buildx
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build & push
       - name: Build and Push Image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile.pgaudit
-          push: true
           platforms: linux/amd64,linux/arm64
+          push: true
           build-args: |
-            PG_VERSION=18
+            PG_VERSION=${{ env.PG_VERSION }}
           tags: |
-            ghcr.io/${{ github.repository_owner }}/postgres-audit:18
-            ghcr.io/${{ github.repository_owner }}/postgres-audit:18-${{ steps.vars.outputs.TAG }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.PG_VERSION }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.PG_VERSION }}-main
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+
