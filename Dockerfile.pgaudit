@@ -1,31 +1,24 @@
-# 基于官方 PostgreSQL 镜像（以 18 为示例）
+# Build-time argument：PostgreSQL version
 ARG PG_VERSION=18
+
+# Base PostgreSQL image
 FROM postgres:${PG_VERSION}
 
-# 安装编译依赖并编译 pgaudit
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-      build-essential \
-      git \
-      ca-certificates \
-      curl \
-      ca-certificates \
-      libssl-dev \
-      pkg-config \
-      # PostgreSQL server dev headers；如果版本不同可改为 postgresql-server-dev-all
-      postgresql-server-dev-18 \
-  && rm -rf /var/lib/apt/lists/*
+# Install build dependencies and compile pgaudit
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        wget \
+        git && \
+    git clone --branch REL_${PG_VERSION}_STABLE https://github.com/pgaudit/pgaudit.git /tmp/pgaudit && \
+    cd /tmp/pgaudit && make && make install && \
+    rm -rf /tmp/pgaudit && \
+    apt-get remove -y build-essential git wget && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# 编译并安装 pgaudit
-RUN git clone https://github.com/pgaudit/pgaudit.git /tmp/pgaudit \
-  && cd /tmp/pgaudit \
-  && make && make install \
-  && rm -rf /tmp/pgaudit
-
-# （可选）在镜像启动时自动创建扩展的 helper 脚本
-# 注意：直接在镜像中创建扩展并不总是合适，因为需要在 DB 初始化后在特定数据库中运行 CREATE EXTENSION。
-# 这里放一个脚本到 docker-entrypoint-initdb.d，供首次 initdb 时自动创建 pgaudit（示例针对 'postgres' DB）。
-COPY create_pgaudit.sql /docker-entrypoint-initdb.d/10-create-pgaudit.sql
-
-# 清理编译依赖（如果希望减小镜像体积，可以在单条 RUN 里安装、编译、再卸载编译包；此处为示例保留）
-# ENTRYPOINT/CMD 沿用官方镜像
+# Add default configuration
+RUN echo "shared_preload_libraries='pgaudit'" >> /usr/share/postgresql/postgresql.conf.sample && \
+    echo "pgaudit.log='all'" >> /usr/share/postgresql/postgresql.conf.sample
