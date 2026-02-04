@@ -18,13 +18,18 @@ RUN apt-get update && \
     cd /tmp/pgaudit && \
     make USE_PGXS=1 && make USE_PGXS=1 install && \
     \
+    # Install pg_partman
+    git clone --branch v5.4.0 https://github.com/pgpartman/pg_partman.git /tmp/pg_partman && \
+    cd /tmp/pg_partman && \
+    make USE_PGXS=1 && make USE_PGXS=1 install && \
+    \
     # Cleanup
-    rm -rf /tmp/pgaudit && \
+    rm -rf /tmp/pgaudit /tmp/pg_partman && \
     apt-get remove -y build-essential git wget libkrb5-dev && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Enable pgaudit + pg_cron by default
-RUN echo "shared_preload_libraries='pgaudit,pg_cron'" >> /usr/share/postgresql/postgresql.conf.sample && \
+# Enable pgaudit + pg_cron + pg_partman by default
+RUN echo "shared_preload_libraries='pgaudit,pg_cron,pg_partman_bgw'" >> /usr/share/postgresql/postgresql.conf.sample && \
     echo "cron.database_name='postgres'" >> /usr/share/postgresql/postgresql.conf.sample
