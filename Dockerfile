@@ -16,12 +16,14 @@ RUN apt-get update && \
     # Clone the correct pgaudit branch
     git clone --branch REL_${PG_MAJOR}_STABLE https://github.com/pgaudit/pgaudit.git /tmp/pgaudit && \
     cd /tmp/pgaudit && \
-    make USE_PGXS=1 && make USE_PGXS=1 install && \
+    make USE_PGXS=1 && \
+    make USE_PGXS=1 install && \
     \
     # Install pg_partman
     git clone --branch v5.4.0 https://github.com/pgpartman/pg_partman.git /tmp/pg_partman && \
     cd /tmp/pg_partman && \
-    make USE_PGXS=1 && make USE_PGXS=1 install && \
+    make USE_PGXS=1 && \
+    make USE_PGXS=1 install && \
     \
     # Cleanup
     rm -rf /tmp/pgaudit /tmp/pg_partman && \
